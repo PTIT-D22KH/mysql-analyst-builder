@@ -23,3 +23,14 @@
 USE bakery;
 SELECT DISTINCT city, state
 FROM customers;
+
+
+-- CREATE DATABASE test;
+-- USE test;
+-- CREATE TABLE test_table (
+--     name VARCHAR(255)
+-- );
+
+-- USE test;
+-- SELECT name 
+-- FROM test_table;
