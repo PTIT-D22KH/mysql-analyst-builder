@@ -1,4 +1,4 @@
-
+USE day6;
 CREATE TABLE students (
     id INT,
     first_name VARCHAR(255),
