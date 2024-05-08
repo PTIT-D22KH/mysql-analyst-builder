@@ -1,4 +1,4 @@
-
+USE day6;
 CREATE TABLE shopping_cart (
     customer_id INT,
     carted_items INT,

@@ -1,4 +1,4 @@
-
+USE day6;
 CREATE TABLE tesla_models (
     tesla_model VARCHAR(255),
     car_price INT,

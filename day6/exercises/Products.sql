@@ -1,4 +1,4 @@
-
+USE day6;
 CREATE TABLE products (
     product_name VARCHAR(255),
     purchase_price FLOAT,
