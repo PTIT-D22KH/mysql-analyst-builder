@@ -1,4 +1,4 @@
-
+USE day6;
 CREATE TABLE patient (
     patient_id INT,
     age INT,

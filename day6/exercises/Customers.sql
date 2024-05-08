@@ -1,4 +1,4 @@
-
+USE day6;
 CREATE TABLE customers (
     customer_id INT,
     age INT,
