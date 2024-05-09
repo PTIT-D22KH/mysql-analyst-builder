@@ -1,4 +1,4 @@
-
+USE day7;
 CREATE TABLE bakery_items (
     product_name VARCHAR(255)
 );

@@ -1,4 +1,4 @@
-
+USE day7;
 CREATE TABLE customers (
     customer_id INT,
     movie VARCHAR(255),

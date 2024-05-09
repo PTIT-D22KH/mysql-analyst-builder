@@ -1,4 +1,4 @@
-
+USE day7;
 CREATE TABLE youtube_videos (
     video_id INT,
     thumbs_up INT,

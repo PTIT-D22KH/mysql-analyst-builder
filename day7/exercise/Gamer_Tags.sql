@@ -1,4 +1,4 @@
-
+USE day7;
 CREATE TABLE gamer_tags (
     first_name VARCHAR(255),
     last_name VARCHAR(255),

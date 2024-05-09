@@ -1,4 +1,4 @@
-
+USE day7;
 CREATE TABLE Country (
     country_id INT,
     country VARCHAR(255),
