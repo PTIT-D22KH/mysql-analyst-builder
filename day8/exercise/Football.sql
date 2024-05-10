@@ -1,4 +1,4 @@
-
+USE day8;
 CREATE TABLE football (
     team VARCHAR(255),
     points_scored INT,

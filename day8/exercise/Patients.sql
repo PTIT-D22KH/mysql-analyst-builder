@@ -1,4 +1,4 @@
-
+USE day8;
 CREATE TABLE patients (
     patient_id INT,
     height_inches INT,

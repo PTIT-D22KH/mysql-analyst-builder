@@ -1,4 +1,4 @@
-
+USE day8;
 CREATE TABLE employees (
     employee_id INT,
     birth_date DATE

@@ -1,4 +1,4 @@
-
+USE day8;
 CREATE TABLE inspections (
     owner_name VARCHAR(255),
     vehicle VARCHAR(255),

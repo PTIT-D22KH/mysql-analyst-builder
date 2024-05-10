@@ -1,4 +1,4 @@
-
+USE day8;
 CREATE TABLE employees2 (
     employee_id INT,
     pay_level INT,
