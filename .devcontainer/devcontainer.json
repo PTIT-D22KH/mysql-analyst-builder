@@ -1,1 +1,18 @@
-{"image":"mcr.microsoft.com/devcontainers/universal:2"}
+{
+    "name": "duongvct-mysql-dev",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "..",
+        "args": { 
+            "VARIANT": "buster"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "formulahendry.vscode-mysql",
+                "cweijan.vscode-mysql-client2"
+            ]
+        }
+    }
+}
