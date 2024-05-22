@@ -47,4 +47,21 @@ USE bakery;
 --     ELSE STR_TO_DATE(birth_date, '%Y/%d/%m'))
 -- END
 
+-- SELECT `Are_you_over_18`,
+-- CASE 
+--     WHEN `Are_you_over_18` = 'Yes' THEN 'Y'
+--     WHEN `Are_you_over_18` = 'No' THEN 'N'
+--     ELSE  `Are_you_over_18`
+-- END
+-- FROM bakery.customer_sweepstakes;
 
+-- UPDATE bakery.customer_sweepstakes
+-- SET `Are_you_over_18`=
+-- CASE 
+--     WHEN `Are_you_over_18` = 'Yes' THEN 'Y'
+--     WHEN `Are_you_over_18` = 'No' THEN 'N'
+--     ELSE  `Are_you_over_18`
+-- END
+
+SELECT *
+FROM bakery.customer_sweepstakes
