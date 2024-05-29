@@ -1,0 +1,8 @@
+
+SHOW TRIGGERS;
+SHOW TRIGGERS
+WHERE Event = 'INSERT';
+
+DROP TRIGGER IF EXISTS update_invoices_with_payments;
+
+/* UPDATE TRIGGER  */
