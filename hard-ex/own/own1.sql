@@ -1,9 +1,14 @@
 USE hard;
-SELECT 
-    t1.date
-FROM 
-    temperatures t1
-JOIN temperatures t2 ON t1.date = DATE_SUB(t2.date, INTERVAL 1 DAY)
-WHERE 
-    t1.temperature > t2.temperature
-ORDER BY t1.date ASC;
+SELECT
+    current.date,
+    current.temperature
+FROM
+    temperatures AS current
+JOIN
+    temperatures AS previous
+ON
+    DATE(current.date) = DATE_ADD(previous.date, INTERVAL 1 DAY)
+WHERE
+    current.temperature > previous.temperature
+ORDER BY
+    current.date ASC;
