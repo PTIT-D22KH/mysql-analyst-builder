@@ -160,7 +160,7 @@ END $$
 
 DELIMITER ;
 
--- Call the stored procedure
+
 CALL predictLandWaterArea('Calera', 'Alabama');
 
 
