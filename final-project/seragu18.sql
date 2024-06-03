@@ -40,7 +40,7 @@ where row_num > 1
 -- 0
 
 DELIMITER $$
-
+drop procedure if exists DataCleaning;
 CREATE PROCEDURE DataCleaning()
 BEGIN
 	UPDATE us_household_income
@@ -77,6 +77,29 @@ from us_household_income
 group by State_Name
 order by average_land_area desc, average_water_area desc;
 
+-- Task 2: Filtering Cities by Population Range
+-- Question:
+-- We need a list of all cities where the land area is between 50,000,000 and 100,000,000 square meters.
+-- Include the city name, state name, and county in the results, and order the list alphabetically by city name.
+
+SELECT 
+	City,
+    State_Name,
+    County
+FROM us_household_income
+WHERE ALand BETWEEN 50000000 AND 100000000;
+
+-- Task 3: Counting Cities per State
+SELECT 
+    State_Name,
+    State_ab,
+    COUNT(DISTINCT City) AS city_count
+FROM 
+    US_Household_Income
+GROUP BY 
+    State_Name, State_ab
+ORDER BY 
+    city_count DESC;
 
 -- 4 
 select county, state_name, sum(AWater) as total_water_area
@@ -85,11 +108,81 @@ group by county, state_name
 order by total_water_area desc
 limit 10;
 
+-- Task 5: Finding Cities Near Specific Coordinates
+-- Question:
+-- We are looking for a list of all cities within a specific latitude and longitude range (latitude between 30 and 35, longitude between -90 and -85). 
+-- Include the city name, state name, county, and coordinates, and order the results by latitude and then by longitude.
+
+SELECT 
+	City,
+    State_Name,
+    County,
+    Lat,
+    Lon
+FROM us_household_income
+WHERE 
+	Lat BETWEEN 30 AND 35
+	AND Lon BETWEEN -90 AND -85
+ORDER BY Lat, Lon;
+
+-- Task 6: Using Window Functions for Ranking
+SELECT 
+    State_Name,
+    State_ab,
+    City,
+    ALand AS Land_Area,
+    ROW_NUMBER() OVER (PARTITION BY State_Name ORDER BY ALand DESC) AS Ranks
+FROM 
+    US_Household_Income
+ORDER BY 
+    State_Name, Ranks;
+
 -- 7
 select state_name, sum(ALand) as total_land_area, sum(AWater) as total_water_area, count(distinct city) as num_cities
 from us_household_income
 group by state_name
 order by total_land_area desc;
+
+-- Task 8: Subqueries for Detailed Analysis
+
+-- Question:
+-- Can you provide a list of all cities where the land area is above the average land area of all cities?
+-- Use a subquery to calculate the average land area.
+-- The report should include the city name, state name, and land area, ordered by land area in descending order.
+SELECT 
+	City,
+    State_Name,
+    County,
+    ALand
+FROM us_household_income
+WHERE Aland > (
+	SELECT 
+		AVG(avg_area) AS avg_area
+	FROM (
+		SELECT 
+			City,
+			AVG(ALand) AS avg_area
+		FROM us_household_income
+		GROUP BY City
+	) as aland
+)
+ORDER BY ALand DESC;
+
+-- Task 9: Identifying Cities with High Water to Land Ratios
+SELECT 
+    State_Name,
+    State_ab,
+    City,
+    ALand AS Land_Area,
+    AWater AS Water_Area,
+    (AWater / ALand) AS Water_to_Land_Ratio
+FROM 
+    US_Household_Income
+WHERE 
+    (AWater / ALand) > 0.5
+ORDER BY 
+    Water_to_Land_Ratio DESC;
+
 -- 10
 DELIMITER $$
 drop procedure if exists stateReport;
@@ -98,6 +191,7 @@ BEGIN
 	SELECT 
 		state_name,
         state_ab,
+
         count(distinct city) as total_cities,
         avg(aland) as avg_land_area,
         avg(awater) as avg_water_area
@@ -117,6 +211,64 @@ DELIMITER ;
 
 call stateReport('AL');
 
+-- Task 11: Creating and Using Temporary Tables
+
+-- Question:
+-- We need to create a temporary table that stores the top 20 cities by land area for further analysis.
+-- Use this temporary table to calculate the average water area of these top 20 cities, and include the city name, state name, land area, and water area in your final report.
+
+DROP TEMPORARY TABLE IF EXISTS TOP_20_CITIES;
+CREATE TEMPORARY TABLE TOP_20_CITIES
+SELECT 
+	City,
+    State_Name,
+    County, ALand,
+    AVG(AWater) AS Avg_AWater
+FROM (
+SELECT 
+	City,
+    State_Name,
+    County,
+    ALand,
+    AWater
+FROM us_household_income
+) AS TEMP
+GROUP BY City, State_Name, County, ALand
+ORDER BY ALand DESC
+LIMIT 20;
+
+SELECT *
+FROM TOP_20_CITIES;
+
+-- Task 12: Complex Multi-Level Subqueries
+WITH OverallAverage AS (
+    SELECT AVG(ALand) AS OverallAvgLand
+    FROM US_Household_Income
+),
+
+
+StateAverage AS (
+    SELECT 
+        State_Name,
+        AVG(ALand) AS AvgLandArea
+    FROM 
+        US_Household_Income
+    GROUP BY 
+        State_Name
+)
+
+
+SELECT 
+    StateAverage.State_Name,
+    StateAverage.AvgLandArea
+FROM 
+    StateAverage,
+    OverallAverage
+WHERE 
+    StateAverage.AvgLandArea > OverallAverage.OverallAvgLand
+ORDER BY 
+    StateAverage.AvgLandArea DESC;
+
 -- 13
 explain select state_name, city,county, aland, awater
 from us_household_income
@@ -128,6 +280,78 @@ create index idx_county on us_household_income(county);
 
 -- nhan xet: khi chua dung index: rows : 32706, filtered:1.11
 --  khi dung index : rows: 525 - giam di rat nhieu ~ 62x, filtered:4.74
+
+-- Task 14: Recursive Common Table Expressions (CTEs)
+
+-- Question:
+-- Can you create a recursive CTE that calculates the cumulative land area for cities within each state, ordered by city name?
+-- Include the city name, state name, individual land area, and cumulative land area in your results.
+
+SET GLOBAL cte_max_recursion_depth=10000;
+WITH RECURSIVE CumulativeCTE  
+as (
+	SELECT 
+		ROW_NUMBER() OVER(PARTITION BY State_Name) as row_id,
+        State_Name,
+        City,
+        ALand
+	FROM us_household_income
+),
+RecursiveCTE 
+as (
+	SELECT row_id, State_Name, City, ALand, Aland as cumulative_aland
+	FROM CumulativeCTE
+    WHERE row_id = 1
+    UNION ALL
+    SELECT c.row_id, c.State_Name, c.City, c.ALand, (r.cumulative_aland + c.Aland) as cumulative_aland
+    FROM CumulativeCTE c
+    JOIN RecursiveCTE r
+		ON c.state_name = r.state_name
+		AND c.row_id = r.row_id + 1
+)
+SELECT *
+FROM RecursiveCTE;
+
+-- Task 15: Data Anomalies Detection
+WITH StateStats AS (
+    SELECT 
+        State_Name,
+        AVG(ALand) AS AvgLandArea,
+        STDDEV(ALand) AS StdDevLandArea
+    FROM 
+        US_Household_Income
+    GROUP BY 
+        State_Name
+),
+
+CityZScores AS (
+    SELECT 
+        u.State_Name,
+        u.State_ab,
+        u.City,
+        u.ALand AS Land_Area,
+        s.AvgLandArea,
+        s.StdDevLandArea,
+        (u.ALand - s.AvgLandArea) / s.StdDevLandArea AS ZScore
+    FROM 
+        US_Household_Income u
+    JOIN 
+        StateStats s ON u.State_Name = s.State_Name
+)
+
+SELECT 
+    State_Name,
+    State_ab,
+    City,
+    Land_Area,
+    AvgLandArea,
+    ZScore AS Anomaly_Score
+FROM 
+    CityZScores
+WHERE 
+    ABS(ZScore) > 2
+ORDER BY 
+    ABS(ZScore) DESC;
 
 -- 16
 drop procedure if exists predictLandWaterArea;
@@ -164,6 +388,86 @@ DELIMITER ;
 CALL predictLandWaterArea('Calera', 'Alabama');
 
 
+-- Task 17: Implementing Triggers for Data Integrity
+
+-- Question:
+-- Can you write a trigger that automatically updates a summary table whenever new data is inserted, updated, or deleted in the main dataset? 
+-- The summary table should include aggregated information such as total land area and water area by state. 
+-- Test the trigger to ensure it correctly updates the summary table in response to changes in the main dataset.
+
+CREATE TABLE StateSummary (
+    State_Name VARCHAR(20),
+    Total_Land_Area BIGINT,
+    Total_Water_Area BIGINT,
+    PRIMARY KEY (State_Name)
+);
+
+-- Trigger for INSERT operation
+DELIMITER //
+CREATE TRIGGER after_insert_US_Household_Income
+AFTER INSERT ON us_household_income
+FOR EACH ROW
+BEGIN
+    INSERT INTO StateSummary (State_Name, Total_Land_Area, Total_Water_Area)
+    VALUES (NEW.State_Name, NEW.ALand, NEW.AWater)
+    ON DUPLICATE KEY UPDATE
+        Total_Land_Area = Total_Land_Area + NEW.ALand,
+        Total_Water_Area = Total_Water_Area + NEW.AWater;
+END //
+DELIMITER ;
+
+-- Trigger for UPDATE operation
+DELIMITER //
+CREATE TRIGGER after_update_US_Household_Income
+AFTER UPDATE ON us_household_income
+FOR EACH ROW
+BEGIN
+    UPDATE StateSummary
+    SET 
+        Total_Land_Area = Total_Land_Area - OLD.ALand + NEW.ALand,
+        Total_Water_Area = Total_Water_Area - OLD.AWater + NEW.AWater
+    WHERE State_Name = NEW.State_Name;
+END //
+DELIMITER ;
+
+-- Trigger for DELETE operation
+DELIMITER //
+CREATE TRIGGER after_delete_US_Household_Income
+AFTER DELETE ON us_household_income
+FOR EACH ROW
+BEGIN
+    UPDATE StateSummary
+    SET 
+        Total_Land_Area = Total_Land_Area - OLD.ALand,
+        Total_Water_Area = Total_Water_Area - OLD.AWater
+    WHERE State_Name = OLD.State_Name;
+END //
+DELIMITER ;
+
+-- Task 18: Advanced Data Encryption and Security
+-- add thêm cột mã hóa 
+ALTER TABLE US_Household_Income
+ADD COLUMN Encrypted_Zip_Code BLOB,
+ADD COLUMN Encrypted_Area_Code BLOB;
+-- Mã hóa dữ liệu
+SET @encryption_key = 'MySecretEncryptionKey123!';
+
+UPDATE US_Household_Income
+SET Encrypted_Zip_Code = AES_ENCRYPT(CAST(Zip_Code AS CHAR), @encryption_key),
+    Encrypted_Area_Code = AES_ENCRYPT(Area_Code, @encryption_key);
+-- Giải mã dlieu
+SET @encryption_key = 'MySecretEncryptionKey123!';
+
+SELECT 
+    City,
+    State_Name,
+    AES_DECRYPT(Encrypted_Zip_Code, @encryption_key) AS Decrypted_Zip_Code,
+    AES_DECRYPT(Encrypted_Area_Code, @encryption_key) AS Decrypted_Area_Code
+FROM 
+    US_Household_Income;
+
+
+
 -- 19
 -- Haversine formula
 drop procedure if exists findCitiesWithinRadius;
@@ -183,6 +487,115 @@ END $$
 DELIMITER ;
 
 call findCitiesWithinRadius(32.4473511, -86.4768097, 50);
+
+-- Task 20: Analyzing Correlations
+
+-- Question:
+-- Can you calculate the correlation between land area (ALand) and water area (AWater) for each state? 
+-- Use statistical functions to determine the strength of the correlation. Include the state name and the correlation coefficient in your results.
+WITH temp
+AS (
+SELECT 
+	State_Name,
+    ALand,
+    round(AVG(ALand) OVER(PARTITION BY state_name),2) AS avg_aland,
+    AWater,
+    round(AVG(AWater) OVER(PARTITION BY state_name),2) AS avg_awater
+FROM us_household_income
+),
+temp_2
+AS (
+SELECT 
+	State_Name,
+    ALand,
+    avg_aland,
+    ALand - avg_aland AS aland_avg_aland,
+    AWater,
+    avg_awater,
+    AWater - avg_awater AS awater_avg_awater
+FROM temp
+),
+temp_3
+AS (
+SELECT 
+	State_Name,
+    ALand,
+    avg_aland,
+    aland_avg_aland,
+    pow(aland_avg_aland,2) AS aland_avg_aland_2,
+    AWater,
+    avg_awater,
+    awater_avg_awater,
+    pow(awater_avg_awater,2) AS awater_avg_awater_2
+FROM temp_2
+),
+temp_4
+AS (
+SELECT 
+	state_name,
+    sum(aland_avg_aland*awater_avg_awater)/(count(*)-1) AS sxy,
+    sqrt(sum(aland_avg_aland_2)/(count(*)-1)) AS sx,
+    sqrt(sum(awater_avg_awater_2)/(count(*)-1)) AS sy
+FROM temp_3
+GROUP BY state_name
+)
+SELECT *, sxy/(sx*sy) AS correlation
+FROM temp_4;
+
+-- Nhìn chung Land Area và Water Area có sự tương quan đồng biến với nhau. Bang District of Columbia có Land Area và Water Area có sự tương quan cao nhất với correlation 0.98
+
+-- Task 21: Hotspot Detection 
+-- Gtri tbinh và độ lệch chuẩn dt đất
+WITH LandStats AS (
+    SELECT 
+        AVG(ALand) AS mean_land,
+        STDDEV(ALand) AS stddev_land
+    FROM US_Household_Income
+),
+
+-- Gtri tbinh và độ lệch chuẩn dt nước
+WaterStats AS (
+    SELECT 
+        AVG(AWater) AS mean_water,
+        STDDEV(AWater) AS stddev_water
+    FROM US_Household_Income
+),
+
+-- Z-Scores vùng đất, nước cho mỗi thành phố 
+ZScores AS (
+    SELECT 
+        City,
+        State_Name,
+        ALand,
+        AWater,
+        (ALand - (SELECT mean_land FROM LandStats)) / (SELECT stddev_land FROM LandStats) AS Z_Land,
+        (AWater - (SELECT mean_water FROM WaterStats)) / (SELECT stddev_water FROM WaterStats) AS Z_Water
+    FROM US_Household_Income
+),
+
+-- Sai lệch tổng thể
+DeviationScores AS (
+    SELECT 
+        City,
+        State_Name,
+        ALand,
+        AWater,
+        Z_Land,
+        Z_Water,
+        ABS(Z_Land) + ABS(Z_Water) AS Deviation_Score
+    FROM ZScores
+)
+
+-- Thành phố có điểm sai lệch cao nhất.
+SELECT 
+    City,
+    State_Name,
+    ALand AS Land_Area,
+    AWater AS Water_Area,
+    Deviation_Score
+FROM DeviationScores
+ORDER BY Deviation_Score DESC;
+
 
 -- 22
 with resourceAllocation as(
